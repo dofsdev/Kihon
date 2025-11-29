@@ -200,7 +200,7 @@ tasks.jar {
         val gitBranch = git.exec(providers, "rev-parse", "--abbrev-ref", "HEAD").get().trim()
         attributes(
             "Main-Class" to "org.bukkit.craftbukkit.Main",
-            "Implementation-Title" to "Paper",
+            "Implementation-Title" to "Kihon",
             "Implementation-Version" to implementationVersion,
             "Implementation-Vendor" to date,
             "Specification-Title" to "Paper",
