@@ -1167,4 +1167,20 @@ public class CraftLivingEntity extends CraftEntity implements LivingEntity {
     public CombatTracker getCombatTracker() {
         return this.getHandle().getCombatTracker().paperCombatTracker;
     }
+
+
+
+    // Noxesium start
+
+    @Override
+    public boolean isUsingClientsideTrident() {
+        return getHandle().isUsingClientsideTrident();
+    }
+
+    @Override
+    public void setUseClientsideTrident(boolean useClientTrident) {
+        getHandle().setUseClientsideTrident(useClientTrident);
+    }
+
+    // Noxesium end
 }

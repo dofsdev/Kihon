@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dofs <157043656+dofsdev@users.noreply.github.com>
+Date: Sat, 29 Nov 2025 19:17:48 +0000
+Subject: [PATCH] Noxesium Trident Patches
+
+
+diff --git a/net/minecraft/world/entity/LivingEntity.java b/net/minecraft/world/entity/LivingEntity.java
+index 0268e02d2ef2cb3d699644a804e23a6da4521f4c..b081c728ed8084b0bc8a28ea3719dff7c79c84ad 100644
+--- a/net/minecraft/world/entity/LivingEntity.java
++++ b/net/minecraft/world/entity/LivingEntity.java
+@@ -3699,7 +3699,7 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+         AABB aabb = boundingBoxBeforeSpin.minmax(boundingBoxAfterSpin);
+         List<Entity> entities = this.level().getEntities(this, aabb);
+         int skippedAttackedEntitiesCounter = 0; // Paper - entity attempt spin attack event / hidden entities - count entities that are retroactively not part of the list
+-        if (!entities.isEmpty()) {
++        if (!entities.isEmpty() && !isUsingClientsideTrident()) { // Noxesium - disable spin attacks if using client tridents
+             for (Entity entity : entities) {
+                 // Paper start - entity attempt spin attack event / hidden entities - skip hidden entities
+                 if (this instanceof final ServerPlayer serverPlayer && !serverPlayer.getBukkitEntity().canSee(entity.getBukkitEntity())) {
+@@ -4671,4 +4671,17 @@ public abstract class LivingEntity extends Entity implements Attackable, Waypoin
+ 
+     public record Fallsounds(SoundEvent small, SoundEvent big) {
+     }
++
++
++    // Noxesium start
++    private boolean useClientTrident = false;
++
++    public void setUseClientsideTrident(boolean useClientTrident) {
++        this.useClientTrident = useClientTrident;
++    }
++
++    public boolean isUsingClientsideTrident() {
++        return useClientTrident;
++    }
++    // Noxesium end
+ }
+diff --git a/net/minecraft/world/item/TridentItem.java b/net/minecraft/world/item/TridentItem.java
+index 2c38f40e87e711942c41c0740fbb2b4080ab9bcf..5ed5e0f887efaefab962bf1bebf9e209823de534 100644
+--- a/net/minecraft/world/item/TridentItem.java
++++ b/net/minecraft/world/item/TridentItem.java
+@@ -114,7 +114,7 @@ public class TridentItem extends Item implements ProjectileItem {
+                         }
+                     }
+ 
+-                    if (tridentSpinAttackStrength > 0.0F) {
++                    if (tridentSpinAttackStrength > 0.0F && !player.isUsingClientsideTrident()) {
+                         float yRot = player.getYRot();
+                         float xRot = player.getXRot();
+                         float f = -Mth.sin(yRot * (float) (Math.PI / 180.0)) * Mth.cos(xRot * (float) (Math.PI / 180.0));
+@@ -149,7 +149,7 @@ public class TridentItem extends Item implements ProjectileItem {
+         ItemStack itemInHand = player.getItemInHand(hand);
+         if (itemInHand.nextDamageWillBreak()) {
+             return InteractionResult.FAIL;
+-        } else if (EnchantmentHelper.getTridentSpinAttackStrength(itemInHand, player) > 0.0F && !player.isInWaterOrRain()) {
++        } else if (EnchantmentHelper.getTridentSpinAttackStrength(itemInHand, player) > 0.0F) { // Noxesium remove check for water and rain for precharge
+             return InteractionResult.FAIL;
+         } else {
+             player.startUsingItem(hand);
