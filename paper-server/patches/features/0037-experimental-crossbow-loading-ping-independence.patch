@@ -1,0 +1,144 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dofs <157043656+dofsdev@users.noreply.github.com>
+Date: Fri, 19 Dec 2025 18:56:26 +0000
+Subject: [PATCH] experimental crossbow loading ping independence
+
+
+diff --git a/net/minecraft/world/item/CrossbowItem.java b/net/minecraft/world/item/CrossbowItem.java
+index fc6f94068b425bf7dc71f94715794f640dc2556e..b49dc99841997b607f01b15a744a9a209f1605e6 100644
+--- a/net/minecraft/world/item/CrossbowItem.java
++++ b/net/minecraft/world/item/CrossbowItem.java
+@@ -62,67 +62,21 @@ public class CrossbowItem extends ProjectileWeaponItem {
+     }
+ 
+ 
+-    //ORIGINAL PAPER
+-
+-    // @Override
+-    // public InteractionResult use(Level level, Player player, InteractionHand hand) {
+-    //     ItemStack itemInHand = player.getItemInHand(hand);
+-    //     ChargedProjectiles chargedProjectiles = itemInHand.get(DataComponents.CHARGED_PROJECTILES);
+-    //     if (chargedProjectiles != null && !chargedProjectiles.isEmpty()) {
+-    //         this.performShooting(level, player, hand, itemInHand, getShootingPower(chargedProjectiles), 1.0F, null);
+-    //         return InteractionResult.CONSUME;
+-    //     } else if (!player.getProjectile(itemInHand).isEmpty()) {
+-    //         this.startSoundPlayed = false;
+-    //         this.midLoadSoundPlayed = false;
+-    //         player.startUsingItem(hand);
+-    //         return InteractionResult.CONSUME;
+-    //     } else {
+-    //         return InteractionResult.FAIL;
+-    //     }
+-    // }
+-
+-
+-    //EXPERIMENTAL PATCH START
+-
+     @Override
+     public InteractionResult use(Level level, Player player, InteractionHand hand) {
+-        ItemStack stack = player.getItemInHand(hand);
+-        ChargedProjectiles charged = stack.get(DataComponents.CHARGED_PROJECTILES);
+-
+-        // If already charged, shoot immediately (vanilla behavior)
+-        if (charged != null && !charged.isEmpty()) {
+-            this.performShooting(level, player, hand, stack, getShootingPower(charged), 1.0F, null);
++        ItemStack itemInHand = player.getItemInHand(hand);
++        ChargedProjectiles chargedProjectiles = itemInHand.get(DataComponents.CHARGED_PROJECTILES);
++        if (chargedProjectiles != null && !chargedProjectiles.isEmpty()) {
++            this.performShooting(level, player, hand, itemInHand, getShootingPower(chargedProjectiles), 1.0F, null);
+             return InteractionResult.CONSUME;
+-        }
+-
+-        // If player has ammo, start using AND instantly charge on the server
+-        if (!player.getProjectile(stack).isEmpty()) {
++        } else if (!player.getProjectile(itemInHand).isEmpty()) {
+             this.startSoundPlayed = false;
+             this.midLoadSoundPlayed = false;
+-
+-            // Start using so the client keeps its animation
+             player.startUsingItem(hand);
+-
+-            // Server-side: charge immediately (removes ping/hold-time effect)
+-            if (!level.isClientSide && !isCharged(stack)) {
+-                // Paper: keep the event exactly like onUseTick does
+-                final io.papermc.paper.event.entity.EntityLoadCrossbowEvent event =
+-                    new io.papermc.paper.event.entity.EntityLoadCrossbowEvent(
+-                        player.getBukkitLivingEntity(),
+-                        stack.asBukkitMirror(),
+-                        org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand)
+-                    );
+-
+-                if (event.callEvent()) {
+-                    // IMPORTANT: pass event.shouldConsumeItem() so plugins can control consumption
+-                    tryLoadProjectiles(player, stack, event.shouldConsumeItem());
+-                }
+-            }
+-
+             return InteractionResult.CONSUME;
++        } else {
++            return InteractionResult.FAIL;
+         }
+-
+-        return InteractionResult.FAIL;
+     }
+ 
+ 
+@@ -143,10 +97,14 @@ public class CrossbowItem extends ProjectileWeaponItem {
+ 
+     @Override
+     public boolean releaseUsing(ItemStack stack, Level level, LivingEntity entity, int timeLeft) {
+-        return isCharged(stack);
++        int usedTicks = this.getUseDuration(stack, entity) - timeLeft;
++        int effectiveUsedTicks = usedTicks + getPingCompTicks(entity);
++
++        return getPowerForTime(effectiveUsedTicks, stack, entity) >= 1.0F && isCharged(stack);
+     }
+ 
+ 
++
+     @Deprecated @io.papermc.paper.annotation.DoNotUse // Paper - Add EntityLoadCrossbowEvent
+     private static boolean tryLoadProjectiles(LivingEntity shooter, ItemStack crossbowStack) {
+         // Paper start - Add EntityLoadCrossbowEvent
+@@ -255,7 +213,20 @@ public class CrossbowItem extends ProjectileWeaponItem {
+     public void onUseTick(Level level, LivingEntity livingEntity, ItemStack stack, int count) {
+         if (!level.isClientSide) {
+             CrossbowItem.ChargingSounds chargingSounds = this.getChargingSounds(stack);
+-            float f = (float)(stack.getUseDuration(livingEntity) - count) / getChargeDuration(stack, livingEntity);
++
++            //EXPERIMENTAL PATCH
++
++            int usedTicks = stack.getUseDuration(livingEntity) - count;
++            int effectiveUsedTicks = usedTicks + getPingCompTicks(livingEntity);
++
++            float f = (float) effectiveUsedTicks / (float) getChargeDuration(stack, livingEntity);
++
++
++            //ORIGINAL
++
++            // float f = (float)(stack.getUseDuration(livingEntity) - count) / getChargeDuration(stack, livingEntity);
++
++
+             if (f < 0.2F) {
+                 this.startSoundPlayed = false;
+                 this.midLoadSoundPlayed = false;
+@@ -371,4 +342,20 @@ public class CrossbowItem extends ProjectileWeaponItem {
+                 .apply(instance, CrossbowItem.ChargingSounds::new)
+         );
+     }
++
++
++    //EXPERIMENTAL PING HELPER
++    private static int getPingCompTicks(LivingEntity entity) {
++        if (entity instanceof ServerPlayer sp) {
++            // latency is round-trip ms in most server impls.
++            // Use half RTT as an estimate of one-way delay.
++            int rttMs = sp.connection.latency();
++            int oneWayMs = rttMs / 2;
++
++            // convert ms to ticks (50ms per tick)
++            return Mth.ceil(oneWayMs / 50.0F);
++        }
++        return 0;
++    }
++
+ }
