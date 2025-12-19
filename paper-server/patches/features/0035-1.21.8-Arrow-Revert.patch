@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dofs <157043656+dofsdev@users.noreply.github.com>
+Date: Fri, 19 Dec 2025 18:31:35 +0000
+Subject: [PATCH] 1.21.8 Arrow Revert
+
+
+diff --git a/net/minecraft/world/entity/projectile/ProjectileUtil.java b/net/minecraft/world/entity/projectile/ProjectileUtil.java
+index 86203733328f664bbe56279c7e0cb227247164b3..67edf2f237759f5bed10ccd88fa7d4565fa9e130 100644
+--- a/net/minecraft/world/entity/projectile/ProjectileUtil.java
++++ b/net/minecraft/world/entity/projectile/ProjectileUtil.java
+@@ -104,8 +104,12 @@ public final class ProjectileUtil {
+     }
+ 
+     public static float computeMargin(Entity entity) {
+-        return Math.max(0.0F, Math.min(0.3F, (entity.tickCount - 2) / 20.0F));
+-    }
++        //revert for 1.21.8 arrows
++        return 0.3F;
++
++        //THIS IS 1.21.8
++        // return Math.max(0.0F, Math.min(0.3F, (entity.tickCount - 2) / 20.0F));
++   }
+ 
+     @Nullable
+     public static EntityHitResult getEntityHitResult(
