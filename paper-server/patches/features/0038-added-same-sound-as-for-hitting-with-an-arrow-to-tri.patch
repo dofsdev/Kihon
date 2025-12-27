@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dofs <157043656+dofsdev@users.noreply.github.com>
+Date: Sat, 27 Dec 2025 00:04:15 +0000
+Subject: [PATCH] added same sound as for hitting with an arrow to tridents
+
+
+diff --git a/net/minecraft/world/entity/projectile/ThrownTrident.java b/net/minecraft/world/entity/projectile/ThrownTrident.java
+index bc04812ec840e255c0ae8651bf7a43e0f562aa9c..506ee1cab12d5eafaf74d1c1e515f0c0a017bcaa 100644
+--- a/net/minecraft/world/entity/projectile/ThrownTrident.java
++++ b/net/minecraft/world/entity/projectile/ThrownTrident.java
+@@ -129,7 +129,8 @@ public class ThrownTrident extends AbstractArrow {
+         Entity entity = result.getEntity();
+         float f = (float) this.baseDamage; // Paper - Allow trident custom damage
+         Entity owner = this.getOwner();
+-        DamageSource damageSource = this.damageSources().trident(this, (Entity)(owner == null ? this : owner));
++        DamageSource damageSource = this.damageSources().trident(this, (Entity) (owner == null ? this : owner));
++
+         if (this.level() instanceof ServerLevel serverLevel) {
+             f = EnchantmentHelper.modifyDamage(serverLevel, this.getWeaponItem(), entity, damageSource, f);
+         }
+@@ -150,6 +151,14 @@ public class ThrownTrident extends AbstractArrow {
+                 this.doKnockback(livingEntity, damageSource);
+                 this.doPostHurtEffects(livingEntity);
+             }
++
++            // === Add the "arrow hit" sound cue to the trident thrower when hitting a player ===
++            if (entity instanceof Player && owner instanceof ServerPlayer serverPlayer
++                && !this.isSilent() && entity != serverPlayer) {
++                serverPlayer.connection.send(
++                    new net.minecraft.network.protocol.game.ClientboundGameEventPacket(net.minecraft.network.protocol.game.ClientboundGameEventPacket.PLAY_ARROW_HIT_SOUND, 0.0F)
++                );
++            }
+         }
+ 
+         this.deflect(ProjectileDeflection.REVERSE, entity, this.getOwner(), false);
+@@ -157,6 +166,7 @@ public class ThrownTrident extends AbstractArrow {
+         this.playSound(SoundEvents.TRIDENT_HIT, 1.0F, 1.0F);
+     }
+ 
++
+     @Override
+     protected void hitBlockEnchantmentEffects(ServerLevel level, BlockHitResult hitResult, ItemStack stack) {
+         Vec3 vec3 = hitResult.getBlockPos().clampLocationWithin(hitResult.getLocation());
