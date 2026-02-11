@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dofs <157043656+dofsdev@users.noreply.github.com>
+Date: Wed, 11 Feb 2026 20:49:23 +0000
+Subject: [PATCH] fixed precharge tridents
+
+
+diff --git a/net/minecraft/world/item/TridentItem.java b/net/minecraft/world/item/TridentItem.java
+index 5ed5e0f887efaefab962bf1bebf9e209823de534..0bb9149e28b32c955fc278f56a7513af9ce1d277 100644
+--- a/net/minecraft/world/item/TridentItem.java
++++ b/net/minecraft/world/item/TridentItem.java
+@@ -149,8 +149,6 @@ public class TridentItem extends Item implements ProjectileItem {
+         ItemStack itemInHand = player.getItemInHand(hand);
+         if (itemInHand.nextDamageWillBreak()) {
+             return InteractionResult.FAIL;
+-        } else if (EnchantmentHelper.getTridentSpinAttackStrength(itemInHand, player) > 0.0F) { // Noxesium remove check for water and rain for precharge
+-            return InteractionResult.FAIL;
+         } else {
+             player.startUsingItem(hand);
+             return InteractionResult.CONSUME;
