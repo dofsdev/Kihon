@@ -1,0 +1,18 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dofs <157043656+dofsdev@users.noreply.github.com>
+Date: Sun, 22 Feb 2026 02:36:56 +0000
+Subject: [PATCH] EXPERIMENTAL Client-Side Crossbows
+
+
+diff --git a/net/minecraft/world/item/CrossbowItem.java b/net/minecraft/world/item/CrossbowItem.java
+index 657b7786d7c39485b53309fd65a020ac977b9870..c879bdb7565e4f3da210083e76afd0699eb3c558 100644
+--- a/net/minecraft/world/item/CrossbowItem.java
++++ b/net/minecraft/world/item/CrossbowItem.java
+@@ -95,6 +95,7 @@ public class CrossbowItem extends ProjectileWeaponItem {
+         } else if (!player.getProjectile(itemInHand).isEmpty()) {
+             this.startSoundPlayed = false;
+             this.midLoadSoundPlayed = false;
++            player.startUsingItem(hand);
+             return InteractionResult.CONSUME;
+ 
+         } else {

@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dofs <157043656+dofsdev@users.noreply.github.com>
+Date: Sun, 22 Feb 2026 01:50:12 +0000
+Subject: [PATCH] Trident Hit Sound
+
+
+diff --git a/net/minecraft/world/entity/projectile/arrow/ThrownTrident.java b/net/minecraft/world/entity/projectile/arrow/ThrownTrident.java
+index 483b8247d3be5839f9d764912ae5b879a9f729aa..e9e1f564caac0040fd33cad021b062507ac4aa2c 100644
+--- a/net/minecraft/world/entity/projectile/arrow/ThrownTrident.java
++++ b/net/minecraft/world/entity/projectile/arrow/ThrownTrident.java
+@@ -161,6 +161,15 @@ public class ThrownTrident extends AbstractArrow {
+                 this.doKnockback(livingEntity, damageSource);
+                 this.doPostHurtEffects(livingEntity);
+             }
++
++            // Add the arrow hit sound cue to the trident thrower when hitting a player
++            if (entity instanceof Player && owner instanceof ServerPlayer serverPlayer
++                && !this.isSilent() && entity != serverPlayer) {
++                serverPlayer.connection.send(
++                    new net.minecraft.network.protocol.game.ClientboundGameEventPacket(net.minecraft.network.protocol.game.ClientboundGameEventPacket.PLAY_ARROW_HIT_SOUND, 0.0F)
++                );
++            }
++
+         }
+ 
+         this.deflect(ProjectileDeflection.REVERSE, entity, this.owner, false);

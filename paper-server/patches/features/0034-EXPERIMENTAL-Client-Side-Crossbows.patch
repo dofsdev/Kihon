@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dofs <157043656+dofsdev@users.noreply.github.com>
+Date: Sun, 22 Feb 2026 01:37:49 +0000
+Subject: [PATCH] EXPERIMENTAL Client-Side Crossbows
+
+
+diff --git a/net/minecraft/world/item/CrossbowItem.java b/net/minecraft/world/item/CrossbowItem.java
+index 664e633f6d93c1569895f9cccb90e3bc8922e56d..705c79443e2dac0b4880b888d4507132392d0209 100644
+--- a/net/minecraft/world/item/CrossbowItem.java
++++ b/net/minecraft/world/item/CrossbowItem.java
+@@ -61,31 +61,81 @@ public class CrossbowItem extends ProjectileWeaponItem {
+         return ARROW_ONLY;
+     }
+ 
++
++    //ORIGINAL PAPER
++
++    // @Override
++    // public InteractionResult use(Level level, Player player, InteractionHand hand) {
++    //     ItemStack itemInHand = player.getItemInHand(hand);
++    //     ChargedProjectiles chargedProjectiles = itemInHand.get(DataComponents.CHARGED_PROJECTILES);
++    //     if (chargedProjectiles != null && !chargedProjectiles.isEmpty()) {
++    //         this.performShooting(level, player, hand, itemInHand, getShootingPower(chargedProjectiles), 1.0F, null);
++    //         return InteractionResult.CONSUME;
++    //     } else if (!player.getProjectile(itemInHand).isEmpty()) {
++    //         this.startSoundPlayed = false;
++    //         this.midLoadSoundPlayed = false;
++    //         player.startUsingItem(hand);
++    //         return InteractionResult.CONSUME;
++    //     } else {
++    //         return InteractionResult.FAIL;
++    //     }
++    // }
++
++    //EXPERIMENTAL PATCH
++
++
+     @Override
+     public InteractionResult use(Level level, Player player, InteractionHand hand) {
+-        ItemStack itemInHand = player.getItemInHand(hand);
+-        ChargedProjectiles chargedProjectiles = itemInHand.get(DataComponents.CHARGED_PROJECTILES);
+-        if (chargedProjectiles != null && !chargedProjectiles.isEmpty()) {
+-            this.performShooting(level, player, hand, itemInHand, getShootingPower(chargedProjectiles), 1.0F, null);
+-            return InteractionResult.CONSUME;
+-        } else if (!player.getProjectile(itemInHand).isEmpty()) {
+-            this.startSoundPlayed = false;
+-            this.midLoadSoundPlayed = false;
+-            player.startUsingItem(hand);
+-            return InteractionResult.CONSUME;
+-        } else {
+-            return InteractionResult.FAIL;
++                    ItemStack stack = player.getItemInHand(hand);
++                    ChargedProjectiles charged = stack.get(DataComponents.CHARGED_PROJECTILES);
++
++                            if (charged != null && !charged.isEmpty()) {
++                            this.performShooting(level, player, hand, stack, getShootingPower(charged), 1.0F, null);
++                return InteractionResult.CONSUME;
++                        }
++
++                            if (!player.getProjectile(stack).isEmpty()) {
++                this.startSoundPlayed = false;
++                this.midLoadSoundPlayed = false;
++                        player.startUsingItem(hand);
++
++                                    if (!level.isClientSide() && !isCharged(stack)) {
++                                        final io.papermc.paper.event.entity.EntityLoadCrossbowEvent event =
++                                            new io.papermc.paper.event.entity.EntityLoadCrossbowEvent(
++                                                    player.getBukkitLivingEntity(),
++                                                   stack.asBukkitMirror(),
++                                                    org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand)
++                                                    );
++
++                                        if (event.callEvent()) {
++                                                tryLoadProjectiles(player, stack, event.shouldConsumeItem());
++                                        }
++                                }
++
++                return InteractionResult.CONSUME;
++            }
++
++                            return InteractionResult.FAIL;
+         }
+-    }
+ 
+     private static float getShootingPower(ChargedProjectiles projectile) {
+         return projectile.contains(Items.FIREWORK_ROCKET) ? 1.6F : 3.15F;
+     }
+ 
++    //ORIGINAL PAPER
++
++    // @Override
++    // public boolean releaseUsing(ItemStack stack, Level level, LivingEntity entity, int timeLeft) {
++    //     int i = this.getUseDuration(stack, entity) - timeLeft;
++    //     return getPowerForTime(i, stack, entity) >= 1.0F && isCharged(stack);
++    // }
++
++
++    //EXPERIMENTAL PATCH
++
+     @Override
+     public boolean releaseUsing(ItemStack stack, Level level, LivingEntity entity, int timeLeft) {
+-        int i = this.getUseDuration(stack, entity) - timeLeft;
+-        return getPowerForTime(i, stack, entity) >= 1.0F && isCharged(stack);
++        return isCharged(stack);
+     }
+ 
+     @Deprecated @io.papermc.paper.annotation.DoNotUse // Paper - Add EntityLoadCrossbowEvent
